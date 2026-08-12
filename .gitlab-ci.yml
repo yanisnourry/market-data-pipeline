@@ -1,0 +1,13 @@
+stages:
+  - deploy
+
+deploy:
+  stage: deploy
+  tags:
+    - bmax-runner
+  script:
+    - Set-Location $env:DEPLOY_PATH
+    - git pull
+    - docker-compose up -d --build
+  only:
+    - main
