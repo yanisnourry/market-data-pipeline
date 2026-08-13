@@ -1,5 +1,8 @@
 .env
 .idea/
-.idea/
 CLAUDE.md
 progress.md
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
