@@ -17,7 +17,7 @@ async def main():
   base_url = "https://api.binance.com"
   async with aiohttp.ClientSession(base_url) as session:
       data = await fetch_candles(session, "BTCUSDT", "1h",
-                                 start_ms=1775030400 * 1000,  # un timestamp quelconque
+                                 start_ms=1775030400 * 1000,  # arbitrary timestamp
                                  end_ms=1775062800 * 1000,
                                  )
       candles = normalize_all(data=data, symbol="BTCUSDT", exchange="BINANCE", timeframe="1h")

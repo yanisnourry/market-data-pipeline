@@ -11,7 +11,7 @@ st.set_page_config(
     layout="wide"
 )
 
-@st.cache_data(ttl=60)  # Re-fetch toutes les 60 secondes
+@st.cache_data(ttl=60)  # Re-fetch every 60 seconds
 def fetch_symbols() -> list[str]:
     response = requests.get(f"{API_BASE}/symbols", timeout=5)
     response.raise_for_status()
@@ -30,7 +30,7 @@ def fetch_ohlcv(symbol, timeframe) -> list[dict]:
     return response.json()
 
 st.title("📊 MARKET DATA PIPELINE")
-# --- Sidebar : sélecteurs ---
+# --- Sidebar: selectors ---
 with st.sidebar:
     st.header("⚙️ Configuration")
     try:
@@ -49,7 +49,7 @@ with st.sidebar:
         timeframes
     )
 
-# --- Section 1 : Candlestick ---
+# --- Section 1: Candlestick ---
 st.header("Candlestick")
 try:
     ohlcv = fetch_ohlcv(symbol, timeframe)
@@ -86,7 +86,7 @@ fig.update_layout(
 
 st.plotly_chart(fig, use_container_width=True)
 
-# --- Section 2 : Data Quality ---
+# --- Section 2: Data Quality ---
 st.header("Data Quality")
 try:
   response = requests.get(f"{API_BASE}/health/data-quality", timeout=5)
