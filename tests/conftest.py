@@ -1,8 +1,15 @@
+import os
 from datetime import datetime, timezone
 
 import pytest
+from dotenv import load_dotenv
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from ingestion.models import Candle
+from storage.models import Base
+
+load_dotenv()
 
 
 @pytest.fixture
@@ -39,3 +46,38 @@ def make_candle():
         )
 
     return _make
+
+
+def _db_url() -> str:
+    return (
+        f"postgresql+asyncpg://{os.getenv('DB_USER')}:{os.getenv('DB_PASSWORD')}"
+        f"@{os.getenv('DB_HOST')}:{os.getenv('DB_PORT')}/{os.getenv('DB_NAME')}"
+    )
+
+
+@pytest.fixture
+async def db_engine():
+    """Engine connected to the real TimescaleDB (docker-compose).
+
+    Cleans up the `candles` table after each test to keep tests independent.
+    """
+    engine = create_async_engine(_db_url())
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    yield engine
+
+    async with engine.begin() as conn:
+        await conn.execute(text("TRUNCATE TABLE candles"))
+    await engine.dispose()
+
+
+@pytest.fixture
+def db_sessionmaker(db_engine):
+    return async_sessionmaker(db_engine, expire_on_commit=False)
+
+
+@pytest.fixture
+async def db_session(db_sessionmaker):
+    async with db_sessionmaker() as session:
+        yield session
