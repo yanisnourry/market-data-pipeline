@@ -126,6 +126,14 @@ streamlit run dashboard/app.py
 
 ---
 
+## Dashboard
+
+![BTCUSDT candlestick, 1h, 14 days](docs/screenshots/dashboard-candlestick.jpg)
+
+![Data quality metrics](docs/screenshots/dashboard-data-quality.jpg)
+
+---
+
 ## API Endpoints
 
 | Method | Endpoint | Description |
