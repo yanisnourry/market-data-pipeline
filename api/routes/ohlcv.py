@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Request, Query
 from fastapi import HTTPException
-from datetime import datetime
-from api.schemas import CandleResponse
+from api.schemas import CandleResponse, UTCDatetime
 from storage.repository import get_latest_candle, get_candles
 
 router = APIRouter()
@@ -20,8 +19,8 @@ async def get_ohlcv(
         request: Request,
         symbol: str,
         timeframe: str,
-        start: datetime | None = None,
-        end: datetime | None = None,
+        start: UTCDatetime = None,
+        end: UTCDatetime = None,
         limit: int = Query(100, ge=1, le=1000),
         offset: int = Query(0, ge=0)
     ):
