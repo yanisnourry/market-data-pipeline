@@ -1,7 +1,7 @@
 import logging
 from typing import Sequence
 
-from sqlalchemy import select
+from sqlalchemy import select, or_
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from ingestion.models import Candle
@@ -15,7 +15,25 @@ async def insert_candles(session: AsyncSession, candles: list[Candle]) -> None:
         return
     rows = [candle.model_dump() for candle in candles]
     stmt = insert(CandleModel).values(rows)
-    stmt = stmt.on_conflict_do_nothing()
+    stmt = stmt.on_conflict_do_update(
+        index_elements=[
+            'timestamp', 'symbol', 'exchange', 'timeframe'
+        ],
+        set_={
+            'open': stmt.excluded.open,
+            'high': stmt.excluded.high,
+            'low': stmt.excluded.low,
+            'close': stmt.excluded.close,
+            'volume': stmt.excluded.volume,
+        },
+        where=or_(
+                CandleModel.open.is_distinct_from(stmt.excluded.open),
+                CandleModel.high.is_distinct_from(stmt.excluded.high),
+                CandleModel.low.is_distinct_from(stmt.excluded.low),
+                CandleModel.close.is_distinct_from(stmt.excluded.close),
+                CandleModel.volume.is_distinct_from(stmt.excluded.volume)
+        )
+    )
     result = await session.execute(stmt)
     await session.commit()
     inserted = result.rowcount if result.rowcount >= 0 else len(rows)
