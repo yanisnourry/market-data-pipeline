@@ -64,6 +64,10 @@ async def db_engine():
     engine = create_async_engine(_db_url())
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        # Truncate before yielding too: a previous test crashing between its
+        # writes and its own cleanup would otherwise leak rows into this run.
+        # Isolation shouldn't depend on the last test having exited cleanly.
+        await conn.execute(text("TRUNCATE TABLE candles"))
 
     yield engine
 

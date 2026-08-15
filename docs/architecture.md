@@ -100,6 +100,8 @@ SELECT create_hypertable('candles', 'timestamp', if_not_exists => TRUE);
 CREATE INDEX ON candles (symbol, timeframe, timestamp DESC);
 ```
 
+`create_hypertable` is only called from `init_db.py`, not from the test fixtures — CI and local tests run `candles` as a plain PostgreSQL table.
+
 ---
 
 ## Validation rules
