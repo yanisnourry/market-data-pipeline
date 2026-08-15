@@ -54,9 +54,9 @@ All timestamps are stored as `TIMESTAMPTZ` (timezone-aware). Python datetimes ar
 
 The `Candle` Pydantic model uses `frozen=True`. Validator flags are applied via `model_copy(update=flags)` which creates a new instance instead of mutating in place. This makes the validation pipeline predictable and testable: a candle at any stage of the pipeline is a complete, valid object.
 
-### Upsert idempotence (`ON CONFLICT DO NOTHING`)
+### Upsert idempotence (`ON CONFLICT DO UPDATE ... WHERE`)
 
-The primary key is `(timestamp, symbol, exchange, timeframe)`. If the scheduler re-fetches a range that was already stored (restart, overlap), duplicates are silently ignored. The pipeline can be re-run without producing inconsistent data.
+The primary key is `(timestamp, symbol, exchange, timeframe)`. If the scheduler re-fetches a range that was already stored (restart, overlap), the row is only rewritten when at least one OHLCV column actually differs (`IS DISTINCT FROM` on `open`/`high`/`low`/`close`/`volume` in the `WHERE` clause) — an unchanged duplicate is a no-op update, not a fresh write. This also lets a re-fetch correct a candle that Binance revised after the fact (e.g. a late trade updating the close of the current, still-forming candle), instead of permanently keeping the first value seen. The pipeline can be re-run without producing inconsistent data.
 
 ### Async throughout (aiohttp + asyncpg + redis.asyncio)
 
