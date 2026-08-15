@@ -58,6 +58,8 @@ The `Candle` Pydantic model uses `frozen=True`. Validator flags are applied via 
 
 The primary key is `(timestamp, symbol, exchange, timeframe)`. If the scheduler re-fetches a range that was already stored (restart, overlap), the row is only rewritten when at least one OHLCV column actually differs (`IS DISTINCT FROM` on `open`/`high`/`low`/`close`/`volume` in the `WHERE` clause) — an unchanged duplicate is a no-op update, not a fresh write. This also lets a re-fetch correct a candle that Binance revised after the fact (e.g. a late trade updating the close of the current, still-forming candle), instead of permanently keeping the first value seen. The pipeline can be re-run without producing inconsistent data.
 
+**Known limitation:** the `SET` clause only touches `open`/`high`/`low`/`close`/`volume` — `has_gap`/`is_outlier`/`is_inconsistency` are never recomputed on a correcting update, so they keep whatever the validator decided on first insert. This is an accepted decoupling of ingestion from validation, not an oversight: re-validating on every conflicting write would mean re-running the validator's neighbor-comparison logic (which needs the surrounding candles, not just the one row) inside the upsert itself.
+
 ### Async throughout (aiohttp + asyncpg + redis.asyncio)
 
 The entire stack is async to avoid blocking the event loop during I/O. Key choices:
