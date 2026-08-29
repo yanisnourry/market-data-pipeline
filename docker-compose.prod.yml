@@ -10,7 +10,9 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: ${DB_NAME}
     ports:
-      - "5432:5432"
+      # Bound to loopback only: reachable with a local psql client on the BMAX
+      # for debugging, never exposed on the host's public interface.
+      - "127.0.0.1:5432:5432"
     volumes:
       - timescaledb_data:/var/lib/postgresql/data
     healthcheck:
@@ -23,7 +25,8 @@ services:
     container_name: redis
     restart: unless-stopped
     ports:
-      - "6379:6379"
+      # Loopback only, same rationale as timescaledb above.
+      - "127.0.0.1:6379:6379"
     volumes:
       - redis_data:/data
     healthcheck:
