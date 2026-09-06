@@ -1,8 +1,3 @@
-"""Bloc B — Data correctness: UTC timestamps everywhere, Decimal everywhere.
-
-These tests prove the property end-to-end (insert -> DB -> read back),
-not just at the Pydantic model level.
-"""
 from datetime import datetime, timezone
 from decimal import Decimal
 

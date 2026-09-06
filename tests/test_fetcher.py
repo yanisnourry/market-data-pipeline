@@ -135,8 +135,6 @@ async def test_fetch_chunk_raises_after_three_failed_attempts():
     assert sleep_mock.await_count == 2
 
 
-# --- pagination -------------------------------------------------------------
-
 CHUNK_MS_1H = BINANCE_MAX_CANDLES * INTERVAL_MS["1h"]  # size of one page, in ms
 TWO_YEARS_MS = 2 * 365 * 24 * INTERVAL_MS["1h"]
 
