@@ -41,3 +41,13 @@ async def test_insert_candles_no_duplicate_on_overlapping_refetch(db_session, ma
 async def test_insert_candles_empty_list_is_a_noop(db_session):
     await insert_candles(db_session, [])
     assert await _count(db_session) == 0
+
+
+async def test_insert_candles_above_bind_param_limit(db_session, make_candle):
+    # 5000 rows x 12 columns = 60k bind params, well past asyncpg's 32767 cap:
+    # only passes if insert_candles splits the upsert into batches.
+    candles = [make_candle(timestamp=T0 + i * ONE_HOUR) for i in range(5000)]
+
+    await insert_candles(db_session, candles)
+
+    assert await _count(db_session) == 5000

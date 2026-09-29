@@ -10,12 +10,14 @@ from storage.models import CandleModel
 logger = logging.getLogger(__name__)
 
 
-async def insert_candles(session: AsyncSession, candles: list[Candle]) -> None:
-    if not candles:
-        return
-    rows = [candle.model_dump() for candle in candles]
+# asyncpg caps a statement at 32767 bind parameters; with 12 columns per row a
+# single multi-row INSERT breaks past ~2700 candles (e.g. a one-year 1h backfill).
+INSERT_BATCH_SIZE = 1000
+
+
+def _upsert_stmt(rows: list[dict]):
     stmt = insert(CandleModel).values(rows)
-    stmt = stmt.on_conflict_do_update(
+    return stmt.on_conflict_do_update(
         index_elements=[
             'timestamp', 'symbol', 'exchange', 'timeframe'
         ],
@@ -34,9 +36,19 @@ async def insert_candles(session: AsyncSession, candles: list[Candle]) -> None:
                 CandleModel.volume.is_distinct_from(stmt.excluded.volume)
         )
     )
-    result = await session.execute(stmt)
+
+
+async def insert_candles(session: AsyncSession, candles: list[Candle]) -> None:
+    if not candles:
+        return
+    rows = [candle.model_dump() for candle in candles]
+    inserted = 0
+    for i in range(0, len(rows), INSERT_BATCH_SIZE):
+        batch = rows[i:i + INSERT_BATCH_SIZE]
+        result = await session.execute(_upsert_stmt(batch))
+        inserted += result.rowcount if result.rowcount >= 0 else len(batch)
+    # Single commit: the whole call stays atomic, however many batches it took.
     await session.commit()
-    inserted = result.rowcount if result.rowcount >= 0 else len(rows)
     skipped = len(rows) - inserted
     logger.debug(f"Inserted {inserted} candles, skipped {skipped} duplicates")
 
