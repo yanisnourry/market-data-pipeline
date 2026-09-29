@@ -41,6 +41,7 @@ async def lifespan(app: FastAPI):
         expire_on_commit=False,
     )
     app.state.redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
+    app.state.ws_connections = 0
 
     # Validate DB connectivity at startup
     try:
