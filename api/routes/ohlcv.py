@@ -22,7 +22,9 @@ async def get_ohlcv(
         start: UTCDatetime = None,
         end: UTCDatetime = None,
         limit: int = Query(100, ge=1, le=1000),
-        offset: int = Query(0, ge=0)
+        # OFFSET makes Postgres read then discard every skipped row: the cap
+        # bounds the cost of a single request. Paginate further with `start`.
+        offset: int = Query(0, ge=0, le=10_000)
     ):
     async with request.app.state.session() as session:
         result = await get_candles(

@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
 from api.routes.health import router as health_router
+from api.routes.ohlcv import router as ohlcv_router
 from storage.repository import insert_candles
 
 T0 = datetime(2024, 1, 1, tzinfo=timezone.utc)
@@ -140,3 +141,13 @@ async def test_health_degraded_but_200_when_redis_down():
     assert response.status_code == 200
     assert response.json() == {"status": "degraded", "db": "ok", "redis": "unhealthy"}
 
+
+async def test_ohlcv_rejects_offset_above_cap():
+    # Query validation runs before the handler, so no DB is needed:
+    # an out-of-range offset must never reach Postgres.
+    app = FastAPI()
+    app.include_router(ohlcv_router)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.get("/ohlcv/BTCUSDT/1h?offset=10001")
+
+    assert response.status_code == 422
