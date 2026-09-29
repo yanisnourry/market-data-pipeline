@@ -1,6 +1,7 @@
 import logging
 import os
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 from fastapi import FastAPI
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
@@ -66,6 +67,10 @@ async def lifespan(app: FastAPI):
             fetch_and_store,
             "interval",
             **TIMEFRAME_SCHEDULE[timeframe],
+            # Interval jobs otherwise first fire one full interval after start:
+            # catch-up would lag by up to 24h (1d), and a daily restart would
+            # starve the 1d job entirely.
+            next_run_time=datetime.now(timezone.utc),
             kwargs={
                 "session_maker": app.state.session,
                 "redis_client": app.state.redis,
